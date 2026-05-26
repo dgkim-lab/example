@@ -1,0 +1,17 @@
+version: "3"
+services:
+  jupyter:
+    #image: jupyter/scipy-notebook:latest
+    image: jupyter/base-notebook:latest
+    user: root # Required for NB_UID/NB_GID to take effect
+    environment:
+      - NB_UID=${CURRENT_UID}
+      - NB_GID=${CURRENT_GID}
+      - CHOWN_HOME=yes
+      - CHOWN_HOME_OPTS=-R
+      - JUPYTER_TOKEN=mypassword
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./work:/home/jovyan/work
+
