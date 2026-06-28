@@ -10,7 +10,7 @@
 # 3. Copy this script, `env.sh`, and `env.example.sh` to `/etc/pam.scripts/`
 # 4. Add following line at the bottom of `/etc/pam.d/sshd` (of course, without backtick ```)
 # ```
-# session required pam_exec.sh /etc/pam.scripts/noti_slack.sh
+# session required pam_exec.so /etc/pam.scripts/noti_slack.sh
 # ```
 #
 
