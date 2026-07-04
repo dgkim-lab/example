@@ -1,0 +1,74 @@
+name: Update image from repository_dispatch
+
+on:
+  repository_dispatch:
+    types:
+      - image-published
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gitops-${{ github.event.client_payload.app }}-${{ github.event.client_payload.environment }}
+  cancel-in-progress: false
+
+env:
+  APP_NAME: sample-app
+  VALUES_FILE: apps/sample-app/values.yaml
+  TARGET_BRANCH: main
+
+jobs:
+  update-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Validate that the dispatch payload targets the application this repository expects to manage.
+      - name: Validate dispatch payload
+        env:
+          DISPATCH_APP: ${{ github.event.client_payload.app }}
+          DISPATCH_IMAGE: ${{ github.event.client_payload.image }}
+          DISPATCH_TAG: ${{ github.event.client_payload.tag }}
+          DISPATCH_ENVIRONMENT: ${{ github.event.client_payload.environment }}
+        run: |
+          test -n "$DISPATCH_APP"
+          test -n "$DISPATCH_IMAGE"
+          test -n "$DISPATCH_TAG"
+          test -n "$DISPATCH_ENVIRONMENT"
+          test "$DISPATCH_APP" = "$APP_NAME"
+
+      # Check out the GitOps repository because this repository, not the app repository, owns manifest mutations.
+      - name: Check out GitOps repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+
+      # Install yq and update the YAML manifest in place using values from the dispatch payload.
+      - name: Update values.yaml
+        uses: mikefarah/yq@v4.44.3
+        env:
+          DISPATCH_IMAGE: ${{ github.event.client_payload.image }}
+          DISPATCH_TAG: ${{ github.event.client_payload.tag }}
+          VALUES_FILE: ${{ env.VALUES_FILE }}
+        with:
+          cmd: yq -i '.image.repository = strenv(DISPATCH_IMAGE) | .image.tag = strenv(DISPATCH_TAG)' "$VALUES_FILE"
+
+      # Commit only when the manifest actually changed, then push to the branch watched by Argo CD.
+      - name: Commit and push manifest update
+        env:
+          DISPATCH_TAG: ${{ github.event.client_payload.tag }}
+          DISPATCH_ENVIRONMENT: ${{ github.event.client_payload.environment }}
+        run: |
+          if git diff --quiet -- "$VALUES_FILE"; then
+            echo "No manifest change detected."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$VALUES_FILE"
+          git commit -m "chore(${APP_NAME}): deploy ${DISPATCH_TAG} to ${DISPATCH_ENVIRONMENT}"
+          git push origin "HEAD:${TARGET_BRANCH}"
+
+      # This is the point where Argo CD would observe the new Git commit and reconcile the cluster state.
+      - name: Explain Argo CD handoff
+        run: echo "Argo CD can now detect the new commit on ${TARGET_BRANCH} and reconcile ${VALUES_FILE}."

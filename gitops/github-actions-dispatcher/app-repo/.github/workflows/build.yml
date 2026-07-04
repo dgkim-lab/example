@@ -1,0 +1,59 @@
+name: Build image and notify GitOps
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: build-and-dispatch-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_NAME: sample-app
+  DEPLOY_ENVIRONMENT: dev
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/sample-app
+
+jobs:
+  build-and-dispatch:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Pull the application source that will be packaged into the container image.
+      - name: Check out app repository
+        uses: actions/checkout@v4
+
+      # Authenticate to GitHub Container Registry so the workflow can push the image.
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build the image from the repository root and publish it using the commit SHA as the immutable tag.
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      # Emit deployment metadata to the GitOps repository instead of mutating that repository here.
+      - name: Dispatch image update event
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GITOPS_REPO_TOKEN }}
+          repository: ${{ vars.GITOPS_REPOSITORY }}
+          event-type: image-published
+          client-payload: >-
+            {
+              "app": "${{ env.APP_NAME }}",
+              "image": "${{ env.IMAGE_NAME }}",
+              "tag": "${{ github.sha }}",
+              "environment": "${{ env.DEPLOY_ENVIRONMENT }}"
+            }
