@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: docker.io/postgres:${POSTGRES_IMAGE_TAG:-17-alpine}
+    container_name: gotosocial-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gotosocial}
+      POSTGRES_USER: ${POSTGRES_USER:-gotosocial}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS:---locale=C.UTF-8 --encoding=UTF8}
+      TZ: ${TZ:-UTC}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+
+  gotosocial:
+    image: docker.io/superseriousbusiness/gotosocial:${GOTOSOCIAL_IMAGE_TAG:-latest}
+    container_name: gotosocial
+    restart: unless-stopped
+    user: "${PUID:-10001}:${PGID:-100}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "${GTS_PUBLISH_IP:-127.0.0.1}:${GTS_PUBLISH_PORT:-8080}:8080"
+    volumes:
+      - ./data:/gotosocial/storage
+      - ./cache:/gotosocial/.cache
