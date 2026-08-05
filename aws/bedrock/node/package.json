@@ -1,0 +1,18 @@
+{
+  "name": "bedrock-hello-world",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "list-models": "node list-models.js",
+    "ask-amazon": "node ask-amazon.js",
+    "ask-anthropic": "node ask-anthropic.js",
+    "usage": "node print-usage.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock": "^3.637.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.637.0",
+    "@aws-sdk/client-cloudwatch": "^3.637.0",
+    "dotenv": "^16.4.5"
+  }
+}
