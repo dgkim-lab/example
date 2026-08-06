@@ -3,5 +3,19 @@
   hosts: openvpn_servers
   gather_facts: true
 
+  pre_tasks:
+    - name: Check for vaulted OpenVPN secrets
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/../group_vars/openvpn_servers/vault.yml"
+      register: openvpn_vault_file
+      delegate_to: localhost
+      become: false
+
+    - name: Load vaulted OpenVPN secrets when present
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../group_vars/openvpn_servers/vault.yml"
+      when: openvpn_vault_file.stat.exists
+      no_log: true
+
   roles:
     - role: openvpn

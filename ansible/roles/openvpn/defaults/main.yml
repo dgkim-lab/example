@@ -2,6 +2,12 @@
 openvpn_domain: "{{ inventory_hostname }}"
 letsencrypt_email: admin@example.com
 letsencrypt_staging: true
+letsencrypt_renewal_hook_path: /etc/letsencrypt/renewal-hooks/deploy/restart-openvpn
+
+route53_aws_access_key_id: ""
+route53_aws_secret_access_key: ""
+route53_aws_region: us-east-1
+route53_aws_credentials_path: /root/.aws/credentials
 
 openvpn_port: 1194
 openvpn_proto: udp

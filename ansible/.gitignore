@@ -1,4 +1,4 @@
 .ansible/
 *.retry
-*.vault
 .vault_pass
+group_vars/*/vault.yml

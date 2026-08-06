@@ -1,0 +1,14 @@
+---
+# Copy this file to group_vars/openvpn_servers/vault.yml and encrypt it:
+#
+#   ansible-vault encrypt group_vars/openvpn_servers/vault.yml
+#
+# Use empty strings when a secret is not needed.
+
+# For non-EC2 hosts using Certbot Route53 DNS-01 validation.
+route53_aws_access_key_id: ""
+route53_aws_secret_access_key: ""
+
+# Only needed when your LDAP server requires a service account for searching.
+openvpn_ldap_bind_dn: ""
+openvpn_ldap_bind_password: ""

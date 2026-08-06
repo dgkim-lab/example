@@ -23,6 +23,39 @@
       mode: "0755"
     - path: /var/log/openvpn
       mode: "0755"
+    - path: /etc/letsencrypt/renewal-hooks/deploy
+      mode: "0755"
+
+- name: Create root AWS config directory when static Route53 credentials are set
+  ansible.builtin.file:
+    path: /root/.aws
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when:
+    - route53_aws_access_key_id | length > 0
+    - route53_aws_secret_access_key | length > 0
+
+- name: Install AWS credentials for Certbot Route53 validation
+  ansible.builtin.template:
+    src: aws-credentials.j2
+    dest: "{{ route53_aws_credentials_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  when:
+    - route53_aws_access_key_id | length > 0
+    - route53_aws_secret_access_key | length > 0
+
+- name: Install Certbot deploy hook for OpenVPN restart
+  ansible.builtin.template:
+    src: certbot-restart-openvpn.sh.j2
+    dest: "{{ letsencrypt_renewal_hook_path }}"
+    owner: root
+    group: root
+    mode: "0755"
 
 - name: Request initial Let's Encrypt staging certificate through Route53 DNS-01
   ansible.builtin.command:
