@@ -1,0 +1,7 @@
+---
+- name: Configure OpenVPN servers
+  hosts: openvpn_servers
+  gather_facts: true
+
+  roles:
+    - role: openvpn

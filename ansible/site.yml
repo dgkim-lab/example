@@ -1,0 +1,9 @@
+---
+- name: Apply all configured roles
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Show selected host
+      ansible.builtin.debug:
+        msg: "Host {{ inventory_hostname }} is reachable."

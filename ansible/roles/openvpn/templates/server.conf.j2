@@ -1,0 +1,34 @@
+port {{ openvpn_port }}
+proto {{ openvpn_proto }}
+dev {{ openvpn_dev }}
+
+server {{ openvpn_network }} {{ openvpn_netmask }}
+topology subnet
+
+ca {{ openvpn_ca_path }}
+cert {{ openvpn_cert_path }}
+key {{ openvpn_key_path }}
+dh none
+
+tls-version-min {{ openvpn_tls_version_min }}
+cipher {{ openvpn_cipher }}
+auth {{ openvpn_auth_digest }}
+
+plugin {{ openvpn_ldap_plugin_path }} /etc/openvpn/server/auth-ldap.conf
+verify-client-cert none
+username-as-common-name
+
+keepalive {{ openvpn_keepalive }}
+persist-key
+persist-tun
+
+{% for dns_server in openvpn_dns_servers %}
+push "dhcp-option DNS {{ dns_server }}"
+{% endfor %}
+{% for route in openvpn_push_routes %}
+push "route {{ route }}"
+{% endfor %}
+
+status {{ openvpn_status_log }}
+verb {{ openvpn_verb }}
+explicit-exit-notify 1

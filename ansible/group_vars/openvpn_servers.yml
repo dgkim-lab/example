@@ -1,0 +1,37 @@
+---
+# Public DNS name for the VPN server. This must resolve to the server and be
+# managed in Route53 for DNS-01 validation.
+openvpn_domain: vpn.example.com
+letsencrypt_email: admin@example.com
+letsencrypt_staging: true
+
+# Route53 credentials should normally come from an EC2 instance profile. If you
+# must use static credentials, provide them through Ansible Vault and configure
+# the remote AWS credential chain outside this role.
+route53_hosted_zone_id: ""
+
+openvpn_port: 1194
+openvpn_proto: udp
+openvpn_service_name: openvpn-server@server
+openvpn_network: 10.8.0.0
+openvpn_netmask: 255.255.255.0
+openvpn_cidr: 10.8.0.0/24
+openvpn_dns_servers:
+  - 1.1.1.1
+  - 8.8.8.8
+openvpn_push_routes:
+  - "192.168.1.0 255.255.255.0"
+  - "10.0.0.0 255.0.0.0"
+
+openvpn_ldap_url: ldap://ldap.example.com
+openvpn_ldap_plugin_path: /usr/lib/openvpn/openvpn-auth-ldap.so
+# Leave these empty when the LDAP server allows unauthenticated search before
+# binding the OpenVPN client user with the supplied password.
+openvpn_ldap_bind_dn: ""
+openvpn_ldap_bind_password: ""
+openvpn_ldap_base_dn: ou=users,dc=example,dc=com
+openvpn_ldap_login_attribute: uid
+openvpn_ldap_require_group: false
+openvpn_ldap_group_base_dn: ou=groups,dc=example,dc=com
+openvpn_ldap_group_search_filter: "(cn=vpn-users)"
+openvpn_ldap_group_member_attribute: member

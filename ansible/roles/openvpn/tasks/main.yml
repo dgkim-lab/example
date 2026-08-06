@@ -1,0 +1,114 @@
+---
+- name: Validate supported operating system
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == "Debian"
+    fail_msg: "This role supports Debian-family hosts such as Ubuntu and Raspberry Pi OS."
+
+- name: Install OpenVPN and certificate packages
+  ansible.builtin.apt:
+    name: "{{ openvpn_packages }}"
+    state: present
+    update_cache: true
+
+- name: Create OpenVPN directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - path: /etc/openvpn/server
+      mode: "0755"
+    - path: /var/log/openvpn
+      mode: "0755"
+
+- name: Request initial Let's Encrypt staging certificate through Route53 DNS-01
+  ansible.builtin.command:
+    argv:
+      - certbot
+      - certonly
+      - --dns-route53
+      - --non-interactive
+      - --agree-tos
+      - --test-cert
+      - --email
+      - "{{ letsencrypt_email }}"
+      - -d
+      - "{{ openvpn_domain }}"
+  args:
+    creates: "{{ openvpn_cert_path }}"
+  register: openvpn_certbot_result
+  changed_when: openvpn_certbot_result.rc == 0
+  when: letsencrypt_staging | bool
+
+- name: Request initial Let's Encrypt production certificate through Route53 DNS-01
+  ansible.builtin.command:
+    argv:
+      - certbot
+      - certonly
+      - --dns-route53
+      - --non-interactive
+      - --agree-tos
+      - --email
+      - "{{ letsencrypt_email }}"
+      - -d
+      - "{{ openvpn_domain }}"
+  args:
+    creates: "{{ openvpn_cert_path }}"
+  register: openvpn_certbot_result
+  changed_when: openvpn_certbot_result.rc == 0
+  when: not (letsencrypt_staging | bool)
+
+- name: Install LDAP auth configuration
+  ansible.builtin.template:
+    src: auth-ldap.conf.j2
+    dest: /etc/openvpn/server/auth-ldap.conf
+    owner: root
+    group: root
+    mode: "0600"
+  notify: restart openvpn
+
+- name: Install OpenVPN server configuration
+  ansible.builtin.template:
+    src: server.conf.j2
+    dest: /etc/openvpn/server/server.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart openvpn
+
+- name: Enable IPv4 forwarding
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/90-openvpn.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      net.ipv4.ip_forward = 1
+  notify: reload sysctl
+
+- name: Detect default outbound interface
+  ansible.builtin.set_fact:
+    openvpn_outbound_interface: "{{ ansible_default_ipv4.interface }}"
+
+- name: Enable NAT for VPN clients
+  ansible.builtin.iptables:
+    table: nat
+    chain: POSTROUTING
+    source: "{{ openvpn_cidr }}"
+    out_interface: "{{ openvpn_outbound_interface }}"
+    jump: MASQUERADE
+    comment: openvpn-nat
+  become: true
+
+- name: Persist iptables rules
+  ansible.builtin.command: netfilter-persistent save
+  changed_when: true
+
+- name: Enable and start OpenVPN server
+  ansible.builtin.service:
+    name: "{{ openvpn_service_name }}"
+    enabled: true
+    state: started

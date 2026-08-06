@@ -1,0 +1,25 @@
+<LDAP>
+  URL             "{{ openvpn_ldap_url }}"
+{% if openvpn_ldap_bind_dn | length > 0 %}
+  BindDN          "{{ openvpn_ldap_bind_dn }}"
+{% endif %}
+{% if openvpn_ldap_bind_password | length > 0 %}
+  Password        "{{ openvpn_ldap_bind_password }}"
+{% endif %}
+  Timeout         15
+  TLSEnable       no
+  FollowReferrals no
+</LDAP>
+
+<Authorization>
+  BaseDN          "{{ openvpn_ldap_base_dn }}"
+  SearchFilter    "({{ openvpn_ldap_login_attribute }}=%u)"
+  RequireGroup    {{ "true" if openvpn_ldap_require_group else "false" }}
+{% if openvpn_ldap_require_group %}
+  <Group>
+    BaseDN        "{{ openvpn_ldap_group_base_dn }}"
+    SearchFilter  "{{ openvpn_ldap_group_search_filter }}"
+    MemberAttribute "{{ openvpn_ldap_group_member_attribute }}"
+  </Group>
+{% endif %}
+</Authorization>
