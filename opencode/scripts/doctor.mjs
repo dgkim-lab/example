@@ -26,6 +26,9 @@ console.log(`default model: ${config.model ?? "(not set)"}`);
 console.log(`providers: ${Object.keys(config.provider ?? {}).join(", ")}`);
 console.log(`OPENAI_API_KEY: ${localEnv.OPENAI_API_KEY || process.env.OPENAI_API_KEY ? "set" : "missing"}`);
 console.log(`GEMINI_API_KEY: ${localEnv.GEMINI_API_KEY || process.env.GEMINI_API_KEY ? "set" : "missing"}`);
+console.log(`AWS_REGION: ${localEnv.AWS_REGION || process.env.AWS_REGION || config.provider?.["amazon-bedrock"]?.options?.region ? "set" : "missing"}`);
+console.log(`AWS_PROFILE: ${localEnv.AWS_PROFILE || process.env.AWS_PROFILE || config.provider?.["amazon-bedrock"]?.options?.profile ? "set" : "default credential chain"}`);
+console.log(`AWS_BEARER_TOKEN_BEDROCK: ${localEnv.AWS_BEARER_TOKEN_BEDROCK || process.env.AWS_BEARER_TOKEN_BEDROCK ? "set" : "not set"}`);
 
 printCommandVersion("node");
 printCommandVersion("npm", ["--version"]);

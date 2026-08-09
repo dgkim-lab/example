@@ -7,6 +7,16 @@
     "google": {
       "options": {}
     },
+    "amazon-bedrock": {
+      "options": {
+        "region": "ap-northeast-2"
+      },
+      "models": {
+        "amazon.nova-lite-v1:0": {
+          "name": "amazon.nova-lite-v1:0 (Bedrock)"
+        }
+      }
+    },
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "Ollama",
@@ -53,10 +63,11 @@
       }
     }
   },
-  "model": "ollama/llama3.2",
+  "model": "amazon-bedrock/amazon.nova-lite-v1:0",
   "enabled_providers": [
     "openai",
     "google",
+    "amazon-bedrock",
     "ollama",
     "lmstudio",
     "lmstudio-mac"

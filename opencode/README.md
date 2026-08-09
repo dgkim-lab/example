@@ -12,7 +12,7 @@ npm run apply
 npm run doctor
 ```
 
-Use `npm run configure` as the main setup TUI. It can add OpenAI, Gemini, Ollama, or custom OpenAI-compatible providers.
+Use `npm run configure` as the main setup TUI. It can add OpenAI, Gemini, Amazon Bedrock, Ollama, or custom OpenAI-compatible providers.
 
 ## Secrets
 
@@ -30,4 +30,15 @@ npm run apply
 
 The real `env/opencode.env` file is ignored so API keys do not end up in the helper project.
 
-`npm run configure` supports OpenAI, Gemini, Ollama, and custom OpenAI-compatible providers. OpenAI uses OpenCode's built-in `openai` provider. Gemini uses OpenCode's built-in `google` provider. Custom/local providers still use explicit config.
+`npm run configure` supports OpenAI, Gemini, Amazon Bedrock, Ollama, and custom OpenAI-compatible providers. OpenAI uses OpenCode's built-in `openai` provider. Gemini uses OpenCode's built-in `google` provider. Bedrock uses OpenCode's built-in `amazon-bedrock` provider and AWS's credential chain. Custom/local providers still use explicit config.
+
+### Amazon Bedrock
+
+The Bedrock provider is configured with an AWS region and optional named profile. Credentials are intentionally not copied into `opencode.json`; use the AWS credential chain, `AWS_PROFILE`, access-key environment variables, or `AWS_BEARER_TOKEN_BEDROCK` when launching OpenCode. Request model access in the Bedrock console before selecting a model.
+
+After configuring Bedrock, run `npm run validate` and `npm run apply`, then start OpenCode with the relevant AWS environment variables available. The helper does not automatically load `env/opencode.env` into other processes:
+
+```bash
+set -a; source env/opencode.env; set +a
+opencode
+```

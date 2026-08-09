@@ -35,6 +35,20 @@ for (const [providerId, envName] of Object.entries(secretRefs.providerApiKeys ??
   }
 }
 
+if (config.provider?.["amazon-bedrock"]) {
+  const hasBearerToken = localEnv.AWS_BEARER_TOKEN_BEDROCK || process.env.AWS_BEARER_TOKEN_BEDROCK;
+  const hasStaticCredentials =
+    (localEnv.AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID) &&
+    (localEnv.AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY);
+  const hasProfile = localEnv.AWS_PROFILE || process.env.AWS_PROFILE || config.provider["amazon-bedrock"].options?.profile;
+  if (!hasBearerToken && !hasStaticCredentials && !hasProfile) {
+    warnings.push("Amazon Bedrock has no explicit credentials; ensure the AWS credential chain is available when opencode starts.");
+  }
+  if (!config.provider["amazon-bedrock"].options?.region && !(localEnv.AWS_REGION || process.env.AWS_REGION)) {
+    warnings.push("Amazon Bedrock has no region; set provider.amazon-bedrock.options.region or AWS_REGION.");
+  }
+}
+
 if (config.enabled_providers) {
   for (const provider of Object.keys(config.provider ?? {})) {
     if (!config.enabled_providers.includes(provider)) {

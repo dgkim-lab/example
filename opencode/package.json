@@ -7,7 +7,8 @@
     "configure": "node scripts/configure.mjs",
     "validate": "node scripts/validate.mjs",
     "apply": "node scripts/apply.mjs",
-    "doctor": "node scripts/doctor.mjs"
+    "doctor": "node scripts/doctor.mjs",
+    "test": "node --test"
   },
   "dependencies": {
     "@inquirer/prompts": "^7.8.0"

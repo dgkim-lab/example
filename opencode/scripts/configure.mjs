@@ -54,6 +54,7 @@ async function upsertProvider() {
     choices: [
       { name: "OpenAI", value: "openai" },
       { name: "Gemini / Google", value: "gemini" },
+      { name: "Amazon Bedrock", value: "bedrock" },
       { name: "Ollama", value: "ollama" },
       { name: "OpenAI-compatible / other", value: "custom" }
     ]
@@ -74,6 +75,33 @@ async function upsertProvider() {
     };
     secretRefs.providerApiKeys.google = "GEMINI_API_KEY";
     addEnabled("google");
+    return;
+  }
+
+  if (type === "bedrock") {
+    const region = await input({
+      message: "AWS region",
+      default: config.provider["amazon-bedrock"]?.options?.region ?? "ap-northeast-2"
+    });
+    const profile = await input({
+      message: "AWS profile (optional; leave blank for the default credential chain)",
+      default: config.provider["amazon-bedrock"]?.options?.profile ?? ""
+    });
+    const model = await input({
+      message: "Bedrock model ID",
+      default: Object.keys(config.provider["amazon-bedrock"]?.models ?? {})[0] ?? "amazon.nova-lite-v1:0"
+    });
+
+    const options = { region };
+    if (profile) options.profile = profile;
+    config.provider["amazon-bedrock"] = {
+      options,
+      models: {
+        ...(config.provider["amazon-bedrock"]?.models ?? {}),
+        [model]: { name: `${model} (Bedrock)` }
+      }
+    };
+    addEnabled("amazon-bedrock");
     return;
   }
 
