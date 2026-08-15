@@ -19,6 +19,7 @@ YouTube 페이지에서 **브라우저 개발자도구(Console)** 를 이용해
 - duration (영상 길이)
 - viewCountText (조회수 텍스트)
 - publishedText (업로드 시점 텍스트)
+- channelLogoUrl
 - thumbnailUrl
 - collectedAt (수집 시각)
 
@@ -56,10 +57,39 @@ YouTube 페이지에서 **브라우저 개발자도구(Console)** 를 이용해
 
 ```
 ├── README.md  
+├── enrich-youtube-videos.js
 ├── generate-marketcap-treemap.js
 ├── package.json
 └── youtube-export.js
 ```
+
+---
+
+## 🔑 YouTube Data API Enrichment
+
+YouTube Data API를 사용해 `channelUrl`, `channelId`, `channelLogoUrl` 을 보강할 수 있습니다.
+
+1. `.env.example` 을 참고해 `.env` 생성
+
+```bash
+YOUTUBE_API_KEY=your_youtube_data_api_key_here
+```
+
+2. export된 JSON 보강
+
+```bash
+npm run enrich
+```
+
+또는:
+
+```bash
+node enrich-youtube-videos.js youtube_videos.json youtube_videos.enriched.json
+```
+
+출력:
+
+- `youtube_videos.enriched.json`
 
 ---
 
@@ -71,7 +101,7 @@ YouTube 페이지에서 **브라우저 개발자도구(Console)** 를 이용해
 
 - 채널별 영상 개수를 tile 면적으로 사용
 - `channelName` 이 `Unknown` 인 항목은 제외
-- 채널 페이지의 `og:image` 를 읽어 channel logo를 tile 이미지로 사용
+- export/enrich된 `channelLogoUrl` 을 channel logo tile 이미지로 사용
 - 결과물을 단일 HTML 파일로 생성
 
 실행:
@@ -83,7 +113,8 @@ npm run treemap
 또는:
 
 ```bash
-node generate-marketcap-treemap.js youtube_videos.json marketcap-treemap.html
+npm run enrich -- youtube_videos.json youtube_videos.enriched.json
+npm run treemap:html
 ```
 
 출력:
@@ -93,8 +124,10 @@ node generate-marketcap-treemap.js youtube_videos.json marketcap-treemap.html
 주의:
 
 - 현재 JSON에는 market cap 필드가 없으므로, treemap 크기는 **채널별 영상 개수**를 사용합니다
-- channel logo는 실행 시 네트워크로 채널 페이지를 조회해 가져옵니다
+- 새로 export한 JSON에 `channelLogoUrl` 이 있으면 해당 값을 먼저 사용합니다
+- YouTube Data API로 enrich한 JSON을 사용하면 channel logo 누락이 크게 줄어듭니다
 - 네트워크가 막힌 환경에서는 logo 조회가 실패할 수 있으며, 이 경우 이미지가 비어 보일 수 있습니다
+- logo 조회 실패 시 영상 thumbnail로 대체하지 않습니다
 
 ---
 

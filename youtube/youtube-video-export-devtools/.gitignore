@@ -1,4 +1,4 @@
+.env
 youtube_videos*.json
 youtube_videos*.csv
 marketcap-treemap.html
-

@@ -104,9 +104,61 @@
     const img =
       renderer.querySelector("yt-thumbnail-view-model img") ||
       renderer.querySelector("ytd-thumbnail img") ||
-      renderer.querySelector("yt-image img") ||
+      renderer.querySelector("a#thumbnail img") ||
       renderer.querySelector("img");
     return img?.src || attr(img, "src") || "";
+  }
+
+  function isVideoThumbnailUrl(url) {
+    if (!url) return false;
+    try {
+      const u = new URL(url, location.origin);
+      return (
+        u.hostname === "i.ytimg.com" ||
+        u.hostname.endsWith(".ytimg.com") ||
+        u.pathname.includes("/vi/")
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  function getImageUrl(img) {
+    return (
+      img?.currentSrc ||
+      img?.src ||
+      attr(img, "src") ||
+      attr(img, "data-thumb") ||
+      attr(img, "data-src") ||
+      ""
+    );
+  }
+
+  function getChannelLogo(renderer) {
+    const selectors = [
+      "a#avatar-link img",
+      "#avatar img",
+      "yt-img-shadow#avatar img",
+      "ytd-channel-name ~ * img",
+      "yt-decorated-avatar-view-model img",
+      "yt-avatar-shape img",
+    ];
+
+    for (const sel of selectors) {
+      const img = renderer.querySelector(sel);
+      const url = getImageUrl(img);
+      if (url && !isVideoThumbnailUrl(url)) {
+        return url;
+      }
+    }
+
+    const avatarLink = renderer.querySelector('a[href^="/@"] img, a[href^="/channel/"] img, a[href^="/c/"] img, a[href^="/user/"] img');
+    const avatarUrl = getImageUrl(avatarLink);
+    if (avatarUrl && !isVideoThumbnailUrl(avatarUrl)) {
+      return avatarUrl;
+    }
+
+    return "";
   }
 
   function getDuration(renderer) {
@@ -180,6 +232,7 @@
         viewCountText: pickViewCount(metadataTexts),
         publishedText: pickPublished(metadataTexts),
         metadataTexts,
+        channelLogoUrl: getChannelLogo(renderer),
         thumbnailUrl: getThumbnail(renderer),
       };
     });
@@ -207,6 +260,7 @@
     title: x.title,
     url: x.url,
     channelUrl: x.channelUrl,
+    channelLogoUrl: x.channelLogoUrl,
     duration: x.duration,
     viewCountText: x.viewCountText,
     publishedText: x.publishedText,
@@ -224,7 +278,7 @@
 
   const headers = [
     "index", "channelName", "channelUrl", "title", "url", "videoId", "type",
-    "duration", "viewCountText", "publishedText", "thumbnailUrl", "pageUrl", "collectedAt"
+    "duration", "viewCountText", "publishedText", "channelLogoUrl", "thumbnailUrl", "pageUrl", "collectedAt"
   ];
 
   const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;

@@ -20,13 +20,6 @@ function escapeAttribute(value) {
   return escapeHtml(value);
 }
 
-function slugify(value) {
-  return String(value ?? "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "tile";
-}
-
 function parseViewCount(text) {
   if (!text) return 0;
 
@@ -63,10 +56,8 @@ function aggregateChannels(rows) {
   for (const row of rows) {
     const channelName = String(row.channelName || "Unknown").trim() || "Unknown";
     const channelUrl = String(row.channelUrl || "").trim();
+    const channelLogoUrl = String(row.channelLogoUrl || row.avatarUrl || row.logoUrl || "").trim();
     const viewCount = parseViewCount(row.viewCountText);
-    const thumbnailUrl = String(row.thumbnailUrl || "").trim();
-    const title = String(row.title || "").trim();
-
     if (channelName === "Unknown") {
       continue;
     }
@@ -77,10 +68,9 @@ function aggregateChannels(rows) {
         channelUrl,
         videos: 0,
         totalViews: 0,
-        topVideoTitle: "",
         topVideoUrl: "",
         topVideoViews: 0,
-        thumbnailUrl: "",
+        channelLogoUrl: "",
       });
     }
 
@@ -92,11 +82,13 @@ function aggregateChannels(rows) {
       entry.channelUrl = channelUrl;
     }
 
+    if (!entry.channelLogoUrl && channelLogoUrl) {
+      entry.channelLogoUrl = channelLogoUrl;
+    }
+
     if (viewCount >= entry.topVideoViews) {
       entry.topVideoViews = viewCount;
-      entry.topVideoTitle = title;
       entry.topVideoUrl = String(row.url || "").trim();
-      entry.thumbnailUrl = thumbnailUrl;
     }
   }
 
@@ -143,31 +135,8 @@ function splitTreemap(items, x, y, width, height) {
   ];
 }
 
-function formatViews(value) {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value);
-}
-
 function formatViewsExact(value) {
   return new Intl.NumberFormat("en-US").format(value);
-}
-
-async function fetchText(url) {
-  const response = await fetch(url, {
-    headers: {
-      "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36",
-      "accept-language": "en-US,en;q=0.9",
-    },
-    redirect: "follow",
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} for ${url}`);
-  }
-
-  return response.text();
 }
 
 async function fetchDataUrl(url) {
@@ -187,54 +156,52 @@ async function fetchDataUrl(url) {
   return `data:${contentType};base64,${buffer.toString("base64")}`;
 }
 
-function extractLogoUrl(html) {
-  const patterns = [
-    /<meta\s+property="og:image"\s+content="([^"]+)"/i,
-    /<meta\s+content="([^"]+)"\s+property="og:image"/i,
-    /"avatar"\s*:\s*\{"thumbnails"\s*:\s*\[\{"url":"([^"]+)"/i,
-  ];
-
-  for (const pattern of patterns) {
-    const match = html.match(pattern);
-    if (match) {
-      return match[1]
-        .replace(/\\u0026/g, "&")
-        .replace(/\\\//g, "/");
-    }
-  }
-
-  return "";
+function normalizeImageUrl(url) {
+  return String(url || "")
+    .replace(/\\u0026/g, "&")
+    .replace(/\\u003d/g, "=")
+    .replace(/\\\//g, "/")
+    .replace(/&amp;/g, "&")
+    .trim();
 }
 
-async function resolveChannelLogo(entry) {
-  if (!entry.channelUrl) {
-    return entry.thumbnailUrl || "";
+function isVideoThumbnailUrl(url) {
+  try {
+    const { hostname, pathname } = new URL(url);
+    return (
+      hostname === "i.ytimg.com" ||
+      hostname.endsWith(".ytimg.com") ||
+      pathname.includes("/vi/")
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isLikelyChannelLogoUrl(url) {
+  if (!url || isVideoThumbnailUrl(url)) {
+    return false;
   }
 
   try {
-    const html = await fetchText(entry.channelUrl);
-    const logoUrl = extractLogoUrl(html);
-    if (logoUrl) {
-      try {
-        return await fetchDataUrl(logoUrl);
-      } catch (error) {
-        console.warn(`[logo-image] ${entry.channelName}: ${error.message}`);
-        return logoUrl;
-      }
-    }
-  } catch (error) {
-    console.warn(`[logo] ${entry.channelName}: ${error.message}`);
+    const { hostname } = new URL(url);
+    return hostname.endsWith(".googleusercontent.com") || hostname.endsWith(".ggpht.com");
+  } catch {
+    return false;
   }
+}
 
-  if (!entry.thumbnailUrl) {
+async function resolveChannelLogo(entry) {
+  const directLogoUrl = normalizeImageUrl(entry.channelLogoUrl);
+  if (!isLikelyChannelLogoUrl(directLogoUrl)) {
     return "";
   }
 
   try {
-    return await fetchDataUrl(entry.thumbnailUrl);
+    return await fetchDataUrl(directLogoUrl);
   } catch (error) {
-    console.warn(`[thumb] ${entry.channelName}: ${error.message}`);
-    return entry.thumbnailUrl;
+    console.warn(`[logo] ${entry.channelName}: ${error.message}`);
+    return directLogoUrl;
   }
 }
 
@@ -273,7 +240,7 @@ function buildHtml(layout, generatedAt, sourceFile) {
         <div class="tile__shade"></div>
         <div class="tile__content">
           <div class="tile__name">${escapeHtml(item.channelName)}</div>
-          <div class="tile__stats">${escapeHtml(formatViewsExact(item.videos))} videos</div>
+          <div class="tile__stats">${escapeHtml(formatViewsExact(item.videos))}</div>
         </div>
       </a>
     `;
@@ -466,8 +433,7 @@ function buildHtml(layout, generatedAt, sourceFile) {
       text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
     }
 
-    .tile__stats,
-    .tile__meta {
+    .tile__stats {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
     }
@@ -529,7 +495,7 @@ function buildHtml(layout, generatedAt, sourceFile) {
       <div class="summary">
         <p>
           Tile area uses the exported video count per channel.
-          Channel pages are queried for <code>og:image</code>, then each tile is filled with the channel logo.
+          Channel logos come from exported or API-enriched <code>channelLogoUrl</code> values.
         </p>
         <div class="stats">
           <span><strong>${escapeHtml(String(layout.length))}</strong>channels</span>
@@ -591,7 +557,6 @@ async function main() {
     withLogos.map((entry) => ({
       ...entry,
       value: Math.max(entry.videos, 1),
-      id: slugify(entry.channelName),
     })),
     0,
     0,

@@ -2,6 +2,8 @@
   "name": "youtube-video-export-devtools",
   "private": true,
   "scripts": {
-    "treemap": "node generate-marketcap-treemap.js"
+    "enrich": "node enrich-youtube-videos.js",
+    "treemap:html": "node generate-marketcap-treemap.js youtube_videos.enriched.json marketcap-treemap.html",
+    "treemap": "npm run enrich -- youtube_videos.json youtube_videos.enriched.json && npm run treemap:html"
   }
 }
