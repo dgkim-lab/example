@@ -3,6 +3,8 @@
   "private": true,
   "scripts": {
     "enrich": "node enrich-youtube-videos.js",
+    "report": "node generate-youtube-report.js youtube_videos.json youtube-report",
+    "report:watch-history": "node generate-youtube-report.js watch-history.json watch-history-report",
     "treemap:html": "node generate-marketcap-treemap.js youtube_videos.enriched.json marketcap-treemap.html",
     "treemap": "npm run enrich -- youtube_videos.json youtube_videos.enriched.json && npm run treemap:html"
   }

@@ -43,6 +43,31 @@
     }
   }
 
+  function deepWalk(value, visit) {
+    if (!value || typeof value !== "object") return;
+    visit(value);
+    if (Array.isArray(value)) {
+      value.forEach((item) => deepWalk(item, visit));
+    } else {
+      Object.values(value).forEach((item) => deepWalk(item, visit));
+    }
+  }
+
+  function lastSourceUrl(sources) {
+    if (!Array.isArray(sources) || !sources.length) return "";
+    return sources[sources.length - 1]?.url || sources[0]?.url || "";
+  }
+
+  function firstContentText(part) {
+    return (
+      part?.text?.content ||
+      part?.text?.runs?.map((run) => run.text).join("") ||
+      part?.text?.commandRuns?.map((run) => run.text).join("") ||
+      part?.content ||
+      ""
+    );
+  }
+
   function getVideoIdFromUrl(url) {
     if (!url) return "";
     try {
@@ -55,13 +80,121 @@
     }
   }
 
+  function looksLikeDuration(value) {
+    return /^\d{1,2}:\d{2}(?::\d{2})?$/.test(String(value || "").trim());
+  }
+
+  function isUsableTitle(value) {
+    const t = String(value || "").replace(/\s+/g, " ").trim();
+    return Boolean(t) && !looksLikeDuration(t);
+  }
+
+  function extractTitleFromAriaLabel(value) {
+    const label = String(value || "").replace(/\s+/g, " ").trim();
+    if (!label || looksLikeDuration(label)) {
+      return "";
+    }
+
+    const patterns = [
+      /\s+by\s+.+?\s+\d[\d,.]*\s+views?\s+/i,
+      /\s+by\s+.+?\s+(?:\d+\s+)?(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\s+ago\s+/i,
+      /\s+by\s+.+?\s+(?:streamed|premiered)\s+/i,
+      /\s+게시자:\s+.+?\s+조회수\s+/i,
+      /\s+조회수\s+[\d,.]+\S*\s*회\s+/i,
+      /\s+[\d,.]+\S*\s*회\s+시청\s+/i,
+    ];
+
+    for (const pattern of patterns) {
+      const match = label.match(pattern);
+      if (match?.index > 0) {
+        return label.slice(0, match.index).trim();
+      }
+    }
+
+    return label;
+  }
+
+  function formatDurationFromLabel(value) {
+    const label = String(value || "").replace(/\s+/g, " ").trim();
+    if (!label) return "";
+
+    const matches = [...label.matchAll(/(\d+)\s+(hours?|minutes?|seconds?)/gi)];
+    if (!matches.length) return "";
+
+    const parts = { hours: 0, minutes: 0, seconds: 0 };
+    for (const match of matches.slice(-3)) {
+      const amount = Number(match[1]);
+      const unit = match[2].toLowerCase();
+      if (unit.startsWith("hour")) parts.hours = amount;
+      if (unit.startsWith("minute")) parts.minutes = amount;
+      if (unit.startsWith("second")) parts.seconds = amount;
+    }
+
+    if (!parts.hours && !parts.minutes && !parts.seconds) return "";
+
+    const pad = (n) => String(n).padStart(2, "0");
+    return parts.hours
+      ? `${parts.hours}:${pad(parts.minutes)}:${pad(parts.seconds)}`
+      : `${parts.minutes}:${pad(parts.seconds)}`;
+  }
+
+  function parseEnglishDuration(value) {
+    return formatDurationFromLabel(value);
+  }
+
   function getTitleAnchor(renderer) {
+    const selectors = [
+      'a.yt-lockup-metadata-view-model__title[href]',
+      'a.ytLockupMetadataViewModelTitle[href]',
+      'h3.ytLockupMetadataViewModelHeadingReset a[href]',
+      '.shortsLockupViewModelHostMetadataTitle a[href]',
+      'a.shortsLockupViewModelHostEndpoint[title][href]',
+      'a#video-title-link[href]',
+      'a#video-title[href]',
+      'h3 a[href^="/watch"]',
+      'h3 a[href^="/shorts/"]',
+      'a[title][href^="/watch"]',
+      'a[title][href^="/shorts/"]',
+      'a[aria-label][href^="/watch"]',
+      'a[aria-label][href^="/shorts/"]',
+    ];
+
+    for (const selector of selectors) {
+      const anchors = [...renderer.querySelectorAll(selector)];
+      const anchor = anchors.find((el) => attr(el, "id") !== "thumbnail");
+      if (anchor) {
+        return anchor;
+      }
+    }
+
+    return null;
+  }
+
+  function getVideoAnchor(renderer) {
     return (
-      renderer.querySelector('a.yt-lockup-metadata-view-model__title[href]') ||
-      renderer.querySelector('a#video-title[href]') ||
+      getTitleAnchor(renderer) ||
+      renderer.querySelector('a[href^="/watch"]:not(#thumbnail)') ||
+      renderer.querySelector('a[href^="/shorts/"]:not(#thumbnail)') ||
       renderer.querySelector('a[href^="/watch"]') ||
       renderer.querySelector('a[href^="/shorts/"]')
     );
+  }
+
+  function getTitle(renderer, titleAnchor) {
+    const candidates = [
+      attr(titleAnchor, "title"),
+      text(titleAnchor),
+      extractTitleFromAriaLabel(attr(titleAnchor, "aria-label")),
+      attr(renderer.querySelector("h3.ytLockupMetadataViewModelHeadingReset"), "title"),
+      text(renderer.querySelector(".ytLockupMetadataViewModelTitle")),
+      attr(renderer.querySelector(".shortsLockupViewModelHostMetadataTitle a"), "title"),
+      text(renderer.querySelector(".shortsLockupViewModelHostMetadataTitle")),
+      text(renderer.querySelector(".yt-lockup-metadata-view-model__title")),
+      text(renderer.querySelector("#video-title")),
+      text(renderer.querySelector("h3")),
+    ];
+
+    return candidates.find(isUsableTitle) || "";
   }
 
   function getChannelName(renderer) {
@@ -70,6 +203,14 @@
       '.yt-content-metadata-view-model__metadata-row a[href^="/channel/"]',
       '.yt-content-metadata-view-model__metadata-row a[href^="/c/"]',
       '.yt-content-metadata-view-model__metadata-row a[href^="/user/"]',
+      '.ytContentMetadataViewModelMetadataRow a[href^="/@"]',
+      '.ytContentMetadataViewModelMetadataRow a[href^="/channel/"]',
+      '.ytContentMetadataViewModelMetadataRow a[href^="/c/"]',
+      '.ytContentMetadataViewModelMetadataRow a[href^="/user/"]',
+      '.ytContentMetadataViewModelHost a[href^="/@"]',
+      '.ytContentMetadataViewModelHost a[href^="/channel/"]',
+      '.ytContentMetadataViewModelHost a[href^="/c/"]',
+      '.ytContentMetadataViewModelHost a[href^="/user/"]',
       '#channel-name a',
       'ytd-channel-name a',
       'yt-formatted-string#text a',
@@ -95,7 +236,15 @@
       renderer.querySelector('.yt-content-metadata-view-model__metadata-row a[href^="/@"]') ||
       renderer.querySelector('.yt-content-metadata-view-model__metadata-row a[href^="/channel/"]') ||
       renderer.querySelector('.yt-content-metadata-view-model__metadata-row a[href^="/c/"]') ||
-      renderer.querySelector('.yt-content-metadata-view-model__metadata-row a[href^="/user/"]');
+      renderer.querySelector('.yt-content-metadata-view-model__metadata-row a[href^="/user/"]') ||
+      renderer.querySelector('.ytContentMetadataViewModelMetadataRow a[href^="/@"]') ||
+      renderer.querySelector('.ytContentMetadataViewModelMetadataRow a[href^="/channel/"]') ||
+      renderer.querySelector('.ytContentMetadataViewModelMetadataRow a[href^="/c/"]') ||
+      renderer.querySelector('.ytContentMetadataViewModelMetadataRow a[href^="/user/"]') ||
+      renderer.querySelector('.ytContentMetadataViewModelHost a[href^="/@"]') ||
+      renderer.querySelector('.ytContentMetadataViewModelHost a[href^="/channel/"]') ||
+      renderer.querySelector('.ytContentMetadataViewModelHost a[href^="/c/"]') ||
+      renderer.querySelector('.ytContentMetadataViewModelHost a[href^="/user/"]');
 
     return absUrl(attr(el, "href"));
   }
@@ -161,9 +310,11 @@
     return "";
   }
 
-  function getDuration(renderer) {
+  function getDuration(renderer, titleAnchor) {
     const candidates = [
       renderer.querySelector(".yt-badge-shape__text"),
+      renderer.querySelector(".ytBadgeShapeText"),
+      renderer.querySelector("yt-thumbnail-badge-view-model .ytBadgeShapeText"),
       renderer.querySelector("ytd-thumbnail-overlay-time-status-renderer span"),
       renderer.querySelector("#time-status span"),
     ];
@@ -171,23 +322,103 @@
       const t = text(el);
       if (t) return t;
     }
-    return "";
+    return parseEnglishDuration(attr(titleAnchor, "aria-label"));
+  }
+
+  function parsePercent(value) {
+    const match = String(value || "").match(/(\d+(?:\.\d+)?)\s*%/);
+    if (!match) {
+      return "";
+    }
+
+    const percent = Math.max(0, Math.min(100, Number(match[1])));
+    return Number.isFinite(percent) ? String(Math.round(percent)) : "";
+  }
+
+  function getWatchProgress(renderer) {
+    const candidates = [
+      ...renderer.querySelectorAll(`
+        yt-thumbnail-overlay-progress-bar-view-model,
+        .ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment,
+        ytd-thumbnail-overlay-resume-playback-renderer,
+        .ytd-thumbnail-overlay-resume-playback-renderer,
+        [role="progressbar"],
+        #progress
+      `),
+    ];
+
+    for (const el of candidates) {
+      const ariaValue = attr(el, "aria-valuenow");
+      if (ariaValue) {
+        return {
+          watchProgressPercent: String(Math.round(Number(ariaValue))),
+          watchProgressText: attr(el, "aria-label") || text(el),
+        };
+      }
+
+      const percent =
+        parsePercent(attr(el, "style")) ||
+        parsePercent(attr(el.querySelector?.("#progress"), "style")) ||
+        parsePercent(attr(el.querySelector?.("[style*='width']"), "style"));
+
+      if (percent) {
+        return {
+          watchProgressPercent: percent,
+          watchProgressText: attr(el, "aria-label") || text(el),
+        };
+      }
+    }
+
+    return {
+      watchProgressPercent: "",
+      watchProgressText: "",
+    };
   }
 
   function getMetadataTexts(renderer) {
     return [...new Set(
-      [...renderer.querySelectorAll('.yt-content-metadata-view-model__metadata-text, #metadata-line span')]
+      [
+        ...renderer.querySelectorAll(`
+        .yt-content-metadata-view-model__metadata-text,
+          .ytContentMetadataViewModelMetadataText,
+          .ytContentMetadataViewModelHost span,
+          .ytLockupMetadataViewModelMetadata span,
+          .shortsLockupViewModelHostMetadataSubhead span,
+          .shortsLockupViewModelHostOutsideMetadataSubhead span,
+          .inline-metadata-item,
+          ytd-video-meta-block span,
+          #metadata-line span,
+          #metadata span,
+          ytd-grid-video-renderer #metadata span
+        `),
+      ]
         .map((el) => text(el))
         .filter(Boolean)
     )];
   }
 
-  function pickViewCount(metadataTexts) {
-    return metadataTexts.find((t) => /조회수|views|watching|회 시청/i.test(t)) || "";
+  function getAriaMetadata(titleAnchor) {
+    const aria = attr(titleAnchor, "aria-label");
+    if (!aria || looksLikeDuration(aria)) {
+      return [];
+    }
+
+    return [
+      ...aria.matchAll(/[\d,.]+\s*(?:K|M|B)?\s+views?/gi),
+      ...aria.matchAll(/조회수\s+[\d,.]+\S*\s*회/gi),
+      ...aria.matchAll(/[\d,.]+\S*\s*회\s+시청/gi),
+      ...aria.matchAll(/(?:\d+\s+)?(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\s+ago/gi),
+      ...aria.matchAll(/\d+\s*(?:초|분|시간|일|주|개월|달|년)\s*전/gi),
+      ...aria.matchAll(/(?:streamed|premiered)\s+[^,]+/gi),
+    ].map((match) => match[0]);
   }
 
-  function pickPublished(metadataTexts) {
-    return metadataTexts.find((t) => /ago|전|streamed|게시됨|premiered|방송/i.test(t)) || "";
+  function pickViewCount(metadataTexts, ariaMetadata = []) {
+    return [...metadataTexts, ...ariaMetadata].find((t) => /조회수|views|watching|회 시청/i.test(t)) || "";
+  }
+
+  function pickPublished(metadataTexts, ariaMetadata = []) {
+    return [...metadataTexts, ...ariaMetadata].find((t) => /ago|전|streamed|게시됨|premiered|방송/i.test(t)) || "";
   }
 
   function detectType(url) {
@@ -195,10 +426,123 @@
     return "video";
   }
 
+  function getDurationFromLockup(lockup) {
+    const overlays = lockup?.contentImage?.thumbnailViewModel?.overlays || [];
+    for (const overlay of overlays) {
+      const badges = overlay.thumbnailBottomOverlayViewModel?.badges || [];
+      for (const badge of badges) {
+        const model = badge.thumbnailBadgeViewModel;
+        if (model?.text) return model.text;
+        const label = model?.rendererContext?.accessibilityContext?.label;
+        const duration = formatDurationFromLabel(label);
+        if (duration) return duration;
+      }
+    }
+    return "";
+  }
+
+  function getWatchProgressFromLockup(lockup) {
+    const overlays = lockup?.contentImage?.thumbnailViewModel?.overlays || [];
+    for (const overlay of overlays) {
+      const progress = overlay.thumbnailBottomOverlayViewModel
+        ?.progressBar
+        ?.thumbnailOverlayProgressBarViewModel;
+      if (progress?.startPercent !== undefined) {
+        return {
+          watchProgressPercent: String(Math.round(Number(progress.startPercent))),
+          watchProgressText: "",
+        };
+      }
+    }
+    return {
+      watchProgressPercent: "",
+      watchProgressText: "",
+    };
+  }
+
+  function rowFromLockup(lockup, index) {
+    const metadata = lockup?.metadata?.lockupMetadataViewModel || {};
+    const metadataRows = metadata?.metadata?.contentMetadataViewModel?.metadataRows || [];
+    const channelPart = metadataRows[0]?.metadataParts?.[0];
+    const viewPart = metadataRows[1]?.metadataParts?.[0];
+    const publishedPart = metadataRows[1]?.metadataParts?.[1];
+    const videoPath =
+      lockup?.rendererContext?.commandContext?.onTap?.innertubeCommand?.commandMetadata?.webCommandMetadata?.url ||
+      lockup?.itemPlayback?.inlinePlayerData?.onSelect?.innertubeCommand?.commandMetadata?.webCommandMetadata?.url ||
+      "";
+    const channelPath =
+      metadata?.image?.decoratedAvatarViewModel?.rendererContext?.commandContext?.onTap?.innertubeCommand?.browseEndpoint?.canonicalBaseUrl ||
+      channelPart?.text?.commandRuns?.[0]?.onTap?.innertubeCommand?.browseEndpoint?.canonicalBaseUrl ||
+      channelPart?.text?.commandRuns?.[0]?.onTap?.innertubeCommand?.commandMetadata?.webCommandMetadata?.url ||
+      "";
+    const thumbnailUrl = lastSourceUrl(lockup?.contentImage?.thumbnailViewModel?.image?.sources);
+    const channelLogoUrl = lastSourceUrl(metadata?.image?.decoratedAvatarViewModel?.avatar?.avatarViewModel?.image?.sources);
+    const watchProgress = getWatchProgressFromLockup(lockup);
+
+    return {
+      index,
+      pageUrl: location.href,
+      collectedAt: new Date().toISOString(),
+      type: detectType(videoPath),
+      title: metadata.title?.content || "",
+      url: absUrl(videoPath),
+      videoId: getVideoIdFromUrl(videoPath),
+      channelName: firstContentText(channelPart),
+      channelUrl: absUrl(channelPath),
+      duration: getDurationFromLockup(lockup),
+      viewCountText: firstContentText(viewPart),
+      publishedText: firstContentText(publishedPart),
+      ...watchProgress,
+      metadataTexts: metadataRows.flatMap((row) =>
+        (row.metadataParts || []).map(firstContentText).filter(Boolean)
+      ),
+      channelLogoUrl,
+      thumbnailUrl,
+    };
+  }
+
+  function collectInitialDataRows() {
+    const rows = [];
+    deepWalk(window.ytInitialData, (node) => {
+      if (node.lockupViewModel) {
+        rows.push(rowFromLockup(node.lockupViewModel, rows.length + 1));
+      }
+    });
+    return rows;
+  }
+
+  function mergeRows(rows) {
+    const byKey = new Map();
+    for (const row of rows) {
+      const key = row.videoId || row.url || `${row.title}_${row.index}`;
+      if (!key) continue;
+      const existing = byKey.get(key);
+      if (!existing) {
+        byKey.set(key, row);
+        continue;
+      }
+
+      const merged = { ...existing };
+      for (const [field, value] of Object.entries(row)) {
+        if (Array.isArray(value)) {
+          if (!merged[field]?.length && value.length) merged[field] = value;
+        } else if ((merged[field] === "" || merged[field] === undefined || merged[field] === null) && value) {
+          merged[field] = value;
+        }
+      }
+      byKey.set(key, merged);
+    }
+
+    return [...byKey.values()].map((row, index) => ({ ...row, index: index + 1 }));
+  }
+
   function collect() {
     const renderers = [
       ...document.querySelectorAll(`
         .yt-lockup-view-model,
+        yt-lockup-view-model,
+        ytm-shorts-lockup-view-model,
+        ytm-shorts-lockup-view-model-v2,
         ytd-rich-item-renderer,
         ytd-video-renderer,
         ytd-grid-video-renderer,
@@ -208,15 +552,15 @@
       `)
     ];
 
-    const rows = renderers.map((renderer, index) => {
+    const domRows = renderers.map((renderer, index) => {
       const titleAnchor = getTitleAnchor(renderer);
-      const url = absUrl(attr(titleAnchor, "href"));
-      const title =
-        attr(titleAnchor, "title") ||
-        attr(titleAnchor, "aria-label") ||
-        text(titleAnchor);
+      const videoAnchor = getVideoAnchor(renderer);
+      const url = absUrl(attr(videoAnchor, "href"));
+      const title = getTitle(renderer, titleAnchor);
 
       const metadataTexts = getMetadataTexts(renderer);
+      const ariaMetadata = getAriaMetadata(titleAnchor);
+      const watchProgress = getWatchProgress(renderer);
 
       return {
         index: index + 1,
@@ -228,22 +572,20 @@
         videoId: getVideoIdFromUrl(url),
         channelName: getChannelName(renderer),
         channelUrl: getChannelUrl(renderer),
-        duration: getDuration(renderer),
-        viewCountText: pickViewCount(metadataTexts),
-        publishedText: pickPublished(metadataTexts),
+        duration: getDuration(renderer, titleAnchor),
+        viewCountText: pickViewCount(metadataTexts, ariaMetadata),
+        publishedText: pickPublished(metadataTexts, ariaMetadata),
+        ...watchProgress,
         metadataTexts,
         channelLogoUrl: getChannelLogo(renderer),
         thumbnailUrl: getThumbnail(renderer),
       };
     });
 
-    return Array.from(
-      new Map(
-        rows
-          .filter((x) => x.url || x.title)
-          .map((row) => [row.url || `${row.title}_${row.index}`, row])
-      ).values()
-    );
+    return mergeRows([
+      ...collectInitialDataRows(),
+      ...domRows,
+    ].filter((x) => x.url || x.title));
   }
 
   await autoScrollUntilEnd({
@@ -278,7 +620,7 @@
 
   const headers = [
     "index", "channelName", "channelUrl", "title", "url", "videoId", "type",
-    "duration", "viewCountText", "publishedText", "channelLogoUrl", "thumbnailUrl", "pageUrl", "collectedAt"
+    "duration", "watchProgressPercent", "watchProgressText", "viewCountText", "publishedText", "channelLogoUrl", "thumbnailUrl", "pageUrl", "collectedAt"
   ];
 
   const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;

@@ -1,4 +1,9 @@
 .env
 youtube_videos*.json
 youtube_videos*.csv
+watch-history*.json
 marketcap-treemap.html
+youtube-report.md
+youtube-report.html
+watch-history-report.md
+watch-history-report.html

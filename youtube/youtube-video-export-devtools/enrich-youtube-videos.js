@@ -2,36 +2,12 @@
 
 const fs = require("fs/promises");
 const path = require("path");
+const { loadDotEnv } = require("./lib/env");
 
 const INPUT_PATH = path.resolve(process.argv[2] || "youtube_videos.json");
 const OUTPUT_PATH = path.resolve(process.argv[3] || "youtube_videos.enriched.json");
 const API_BASE = "https://www.googleapis.com/youtube/v3";
 const BATCH_SIZE = 50;
-
-async function loadDotEnv(filePath = ".env") {
-  try {
-    const raw = await fs.readFile(path.resolve(filePath), "utf8");
-    for (const line of raw.split(/\r?\n/)) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) {
-        continue;
-      }
-
-      const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
-      if (!match || process.env[match[1]] !== undefined) {
-        continue;
-      }
-
-      process.env[match[1]] = match[2]
-        .trim()
-        .replace(/^(['"])(.*)\1$/, "$2");
-    }
-  } catch (error) {
-    if (error.code !== "ENOENT") {
-      throw error;
-    }
-  }
-}
 
 function chunk(items, size) {
   const chunks = [];

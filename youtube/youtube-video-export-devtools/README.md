@@ -17,6 +17,8 @@ YouTube 페이지에서 **브라우저 개발자도구(Console)** 를 이용해
 - url (영상 URL)
 - videoId
 - duration (영상 길이)
+- watchProgressPercent
+- watchProgressText
 - viewCountText (조회수 텍스트)
 - publishedText (업로드 시점 텍스트)
 - channelLogoUrl
@@ -59,6 +61,7 @@ YouTube 페이지에서 **브라우저 개발자도구(Console)** 를 이용해
 ├── README.md  
 ├── enrich-youtube-videos.js
 ├── generate-marketcap-treemap.js
+├── generate-youtube-report.js
 ├── package.json
 └── youtube-export.js
 ```
@@ -90,6 +93,43 @@ node enrich-youtube-videos.js youtube_videos.json youtube_videos.enriched.json
 출력:
 
 - `youtube_videos.enriched.json`
+
+---
+
+## 📝 OpenAI Report Generator
+
+OpenAI API를 사용해 `youtube_videos.json` 소비 성향 분석 리포트를 Markdown과 HTML로 생성할 수 있습니다.
+리포트는 한국어로 생성되며, 채널 운영자 관점이 아니라 시청자 취향/습관 관점에서 짧게 요약합니다.
+
+`.env` 에 OpenAI API key와 사용할 model을 설정합니다.
+
+```bash
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-5-mini
+```
+
+실행:
+
+```bash
+npm run report
+```
+
+model을 명령행에서 지정할 수도 있습니다.
+
+```bash
+npm run report -- --model gpt-5.1
+```
+
+입력/출력 파일명을 직접 지정하려면:
+
+```bash
+node generate-youtube-report.js youtube_videos.json youtube-report --model gpt-5-mini
+```
+
+출력:
+
+- `youtube-report.md`
+- `youtube-report.html`
 
 ---
 
