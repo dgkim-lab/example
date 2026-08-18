@@ -2,6 +2,7 @@
 import json
 import os
 import re
+import shlex
 import socket
 import subprocess
 import sys
@@ -11,6 +12,36 @@ from ha_battery_monitor import collect_sample
 
 def slug(value):
     return re.sub(r"[^a-z0-9_]+", "_", value.lower()).strip("_")
+
+
+def load_env_file():
+    env_file = os.getenv("BATTERY_MONITOR_ENV_FILE")
+    if not env_file:
+        env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+
+    if not os.path.exists(env_file):
+        if os.getenv("BATTERY_MONITOR_ENV_FILE"):
+            print(f"env file not found: {env_file}", file=sys.stderr)
+        return
+
+    with open(env_file, encoding="utf-8") as handle:
+        for line in handle:
+            try:
+                parts = shlex.split(line, comments=True, posix=True)
+            except ValueError as exc:
+                print(f"skipping invalid env line in {env_file}: {exc}", file=sys.stderr)
+                continue
+
+            if not parts:
+                continue
+            if parts[0] == "export":
+                parts = parts[1:]
+            if len(parts) != 1 or "=" not in parts[0]:
+                continue
+
+            key, value = parts[0].split("=", 1)
+            if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
+                os.environ.setdefault(key, value)
 
 
 def mqtt_args(topic, payload, retain=False):
@@ -94,6 +125,8 @@ def publish_discovery(device_slug, device_id, state_topic):
 
 
 def main():
+    load_env_file()
+
     if "MQTT_HOST" not in os.environ:
         print("MQTT_HOST is required", file=sys.stderr)
         return 2
