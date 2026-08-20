@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Three.js Google Maps Pyramid</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="map"></div>
+      <div class="panel" aria-live="polite">
+        <strong>빛가람전망대</strong>
+        <span>Pyramid sculpture overlay</span>
+      </div>
+      <div class="controls" aria-label="Map controls">
+        <button type="button" id="reset-view">Reset View</button>
+        <button type="button" id="clear-cubes">Clear Cubes</button>
+        <label class="toggle">
+          <input type="checkbox" id="sculpture-visible" checked />
+          <span>Sculpture</span>
+        </label>
+      </div>
+      <div id="status" class="status"></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
