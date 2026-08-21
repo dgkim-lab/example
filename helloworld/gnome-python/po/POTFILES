@@ -1,0 +1,7 @@
+data/net.dgkim.GnomePython.desktop.in
+data/net.dgkim.GnomePython.appdata.xml.in
+data/net.dgkim.GnomePython.gschema.xml
+src/window.ui
+src/main.py
+src/window.py
+
