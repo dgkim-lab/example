@@ -70,7 +70,7 @@ public:
 
         setCentralWidget(central);
         createMenus();
-        applyStyle();
+        applyContentStyle(central);
     }
 
 private:
@@ -114,27 +114,18 @@ private:
         dialog.exec();
     }
 
-    void applyStyle()
+    void applyContentStyle(QWidget *content)
     {
-        setStyleSheet(QStringLiteral(R"(
-            QMainWindow, #centralWidget { background: #f4f7fb; }
-            QMenuBar { background: #ffffff; color: #263449; padding: 5px 8px; }
-            QMenuBar::item { padding: 6px 10px; border-radius: 6px; }
-            QMenuBar::item:selected { background: #e8eef8; }
-            QMenu { background: #ffffff; border: 1px solid #dce4ef; padding: 6px; }
-            QMenu::item { padding: 8px 26px 8px 12px; border-radius: 5px; }
-            QMenu::item:selected { background: #e7efff; color: #2157bd; }
+        content->setStyleSheet(QStringLiteral(R"(
+            #centralWidget { background: #f4f7fb; }
             #card { background: #ffffff; border: 1px solid #e0e7f0; border-radius: 20px; }
             #eyebrow { color: #5477b8; font-size: 13px; font-weight: 600; }
             #title { color: #19253a; font-size: 34px; font-weight: 700; }
-            #description, #aboutCopy { color: #65738a; font-size: 15px; }
+            #description { color: #65738a; font-size: 15px; }
             #helloButton { background: #2864d7; color: #ffffff; border: 0; border-radius: 10px; font-size: 15px; font-weight: 600; }
             #helloButton:hover { background: #1f56c1; }
             #helloButton:pressed { background: #17479f; }
             #status { color: #8491a5; font-size: 13px; }
-            #aboutTitle { color: #19253a; font-size: 24px; font-weight: 700; }
-            QDialog { background: #ffffff; }
-            QDialogButtonBox QPushButton { min-width: 72px; padding: 7px 16px; }
         )"));
     }
 };
