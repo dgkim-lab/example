@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.example.HelloWorld</id>
+  <name>Hello World</name>
+  <summary>A tiny Qt desktop example</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <description>
+    <p>A simple Qt Widgets application with a friendly greeting, a Help menu, and an About dialog.</p>
+  </description>
+  <launchable type="desktop-id">org.example.HelloWorld.desktop</launchable>
+  <releases>
+    <release version="1.0.0" date="2026-09-03" />
+  </releases>
+</component>

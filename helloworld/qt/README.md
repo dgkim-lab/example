@@ -17,5 +17,8 @@ The project supports Qt 6 and falls back to Qt 5 when Qt 6 is unavailable.
 For CachyOS package installation and build instructions, see
 [BUILD-CACHYOS.md](BUILD-CACHYOS.md).
 
+For Flatpak packaging instructions, see
+[BUILD-FLATPAK.md](BUILD-FLATPAK.md).
+
 For Windows, macOS, deployment, and cross-compilation guidance, see
 [CROSS-PLATFORM.md](CROSS-PLATFORM.md).

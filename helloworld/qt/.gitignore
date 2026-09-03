@@ -1,2 +1,9 @@
+# Local CMake and Flatpak build output
 build/
+build-flatpak/
+repo/
+.flatpak-builder/
+*.flatpak
+
+# IDE-local files
 *.user

@@ -1,0 +1,25 @@
+app-id: org.example.HelloWorld
+runtime: org.kde.Platform
+runtime-version: '6.10'
+sdk: org.kde.Sdk
+command: hello-world
+
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+
+modules:
+  - name: hello-world
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+    build-commands:
+      - cmake --build . --parallel
+      - install -Dm644 ../data/org.example.HelloWorld.desktop /app/share/applications/org.example.HelloWorld.desktop
+      - install -Dm644 ../data/org.example.HelloWorld.metainfo.xml /app/share/metainfo/org.example.HelloWorld.metainfo.xml
+      - install -Dm644 ../data/org.example.HelloWorld.svg /app/share/icons/hicolor/scalable/apps/org.example.HelloWorld.svg
+    sources:
+      - type: dir
+        path: .
