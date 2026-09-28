@@ -1,0 +1,24 @@
+# Compiled binaries and object files
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+*.out
+simd
+simd.exe
+
+# Rust/Cargo build output
+target/
+
+# Go build and test output
+*.test
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Node.js dependencies and coverage output
+node_modules/
+coverage/
+
