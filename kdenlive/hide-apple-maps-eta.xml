@@ -1,0 +1,38 @@
+<effect id="hide-apple-maps-eta" tag="avfilter.drawbox" type="customVideo">
+ <name>hide-apple-maps-eta</name>
+ <description>Draw a colored box on the input video</description>
+ <author>libavfilter</author>
+ <parameter default="100" factor="1" max="%width" min="0" name="av.x" type="animated" value="16720=100">
+  <name>Top-left X</name>
+  <comment><![CDATA[X coordinate of top-left corner]]></comment>
+ </parameter>
+ <parameter default="100" factor="1" max="%height" min="0" name="av.y" type="animated" value="16720=2243">
+  <name>Top-left Y</name>
+  <comment><![CDATA[Y coordinate of top-left corner]]></comment>
+ </parameter>
+ <parameter default="100" factor="1" max="%width" min="1" name="av.w" type="animated" value="16720=954">
+  <name>Width (px)</name>
+  <comment><![CDATA[Width of the box in pixel.<br>
+    	A width of <em>1</em> does not draw a line]]></comment>
+ </parameter>
+ <parameter default="100" factor="1" max="%height" min="1" name="av.h" type="animated" value="16720=196">
+  <name>Height (px)</name>
+  <comment><![CDATA[Height of the box in pixel.<br>
+    	A height of <em>1</em> does not draw a line]]></comment>
+ </parameter>
+ <parameter alpha="1" default="0x0000FF" name="av.color" type="fixedcolor" value="0xe5a50aff">
+  <name>Color</name>
+  <comment><![CDATA[Select a color for the line.<br>
+    	Use the <em>Alpha<em> value to make the line semi-transparent.]]></comment>
+ </parameter>
+ <parameter default="3" factor="1" max="%height" min="0" name="av.t" type="animated" value="16720=98">
+  <name>Thickness (px)</name>
+  <comment><![CDATA[Sets the thickness for the line in pixels]]></comment>
+ </parameter>
+ <parameter default="0" max="1" min="0" name="av.replace " type="bool" value="0">
+  <name>Replace color and alpha</name>
+  <comment><![CDATA[If the input has alpha, checking this<br>
+    	will overwrite the video's color and alpha pixels with the pixels of the painted box.<br>
+    	By default, the box will be composited onto the input, leaving the video's alpha intact.]]></comment>
+ </parameter>
+</effect>
