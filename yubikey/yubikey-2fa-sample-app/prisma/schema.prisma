@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String       @map("password_hash")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  credentials  WebAuthnCredential[]
+
+  @@map("users")
+}
+
+model WebAuthnCredential {
+  id         String   @id
+  userId     String   @map("user_id")
+  publicKey  Bytes    @map("public_key")
+  counter    Int      @default(0)
+  transports String[]
+  createdAt  DateTime @default(now()) @map("created_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("webauthn_credentials")
+}

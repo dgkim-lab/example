@@ -1,0 +1,33 @@
+{
+  "name": "yubikey-2fa-demo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "format": "prettier --write app lib prisma README.md *.json *.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.2",
+    "@simplewebauthn/browser": "^13.2.2",
+    "@simplewebauthn/server": "^13.2.2",
+    "bcryptjs": "^3.0.2",
+    "jose": "^6.1.0",
+    "next": "^15.5.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "prisma": "^6.16.2",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2"
+  }
+}
