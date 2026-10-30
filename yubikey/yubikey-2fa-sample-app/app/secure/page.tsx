@@ -1,10 +1,7 @@
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { getUserId } from "@/lib/session";
 export default async function Secure() {
   if (!(await getUserId())) redirect("/login");
-  if ((await cookies()).get("twoFactorVerified")?.value !== "1")
-    redirect("/secure/verify");
   return (
     <>
       <h1>Protected area</h1>

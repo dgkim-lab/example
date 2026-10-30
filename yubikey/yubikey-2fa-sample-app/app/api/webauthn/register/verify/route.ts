@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyRegistrationResponse } from "@simplewebauthn/server";
 import { getUserId } from "@/lib/session";
 import { db } from "@/lib/db";
-import { origin, rpID } from "@/lib/webauthn";
+import { origin, rpID, userVerification } from "@/lib/webauthn";
 export async function POST(req: Request) {
   const id = await getUserId();
   if (!id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       expectedChallenge: challenge,
       expectedOrigin: origin,
       expectedRPID: rpID,
-      requireUserVerification: false,
+      requireUserVerification: userVerification === "required",
     });
     if (!result.verified || !result.registrationInfo)
       throw new Error("Could not verify security key.");

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { getUserId } from "@/lib/session";
 import { db } from "@/lib/db";
-import { origin, rpID } from "@/lib/webauthn";
+import { origin, rpID, userVerification } from "@/lib/webauthn";
 import { cookies } from "next/headers";
 export async function POST(req: Request) {
   const userId = await getUserId();
@@ -22,6 +22,7 @@ export async function POST(req: Request) {
       expectedChallenge: challenge,
       expectedOrigin: origin,
       expectedRPID: rpID,
+      requireUserVerification: userVerification === "required",
       credential: {
         id: credential.id,
         publicKey: credential.publicKey,
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: 900,
+      maxAge: 60,
     });
     response.cookies.delete("webauthnChallenge");
     return response;
