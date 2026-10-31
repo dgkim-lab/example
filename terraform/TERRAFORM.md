@@ -55,7 +55,7 @@ terraform destroy
 
 - `versions.tf` — Terraform version, provider requirements, and provider configuration for Proxmox, AWS, and MikroTik.
 - `backend.tf` — S3 remote state configuration. Replace the placeholder bucket name before initialization.
-- `variables.tf` — Input variable declarations, including VM and LXC container definitions.
+- `variables.tf` — Input variable declarations, including required manual VM/container IDs and reserved IPs.
 - `main.tf` — Resources: Ubuntu images, VMs, LXC containers, MikroTik DHCP leases, cloud-init snippets, and Route 53 records.
 - `outputs.tf` — Values printed after apply, such as VM/container IDs and IP addresses.
 - `terraform.tfvars.example` — Example variable values. Copy it to `terraform.tfvars` and edit it.

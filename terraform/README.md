@@ -54,18 +54,20 @@ create a narrowly scoped user, and use the RouterOS HTTPS URL in
 
 ## Managing multiple VMs
 
-VMs are declared in the `vms` map. The map key is the stable Terraform identity;
-keep it unchanged if you only rename a VM. Each entry can override its name,
-resources, SSH key, datastore, bridge, and IP configuration. The Ubuntu image
-is downloaded once and reused by every VM.
+VMs are declared in the `vms` map. Each VM must have a manually chosen `vm_id`
+and reserved `ip_address`. The map key is the stable Terraform identity; keep it
+unchanged if you only rename a VM. Each entry can override its name, resources,
+SSH key, datastore, bridge, and MAC address. The Ubuntu image is downloaded once
+and reused by every VM.
 
 Adding an entry creates a VM, changing an entry updates it, and removing an
 entry destroys that VM on the next apply. See `terraform.tfvars.example` for a
 complete two-VM example.
 
-LXC containers are declared separately in the `containers` map. They support
-their own CPU, memory, swap, disk, IP, MAC, DHCP lease, DNS name, and optional
-nesting configuration. The container template is downloaded once and reused.
+LXC containers are declared separately in the `containers` map. They also
+require a manually chosen `vm_id` and reserved `ip_address`, and support their
+own CPU, memory, swap, disk, MAC, DHCP lease, DNS name, and optional nesting
+configuration. The container template is downloaded once and reused.
 
 ## DHCP and Route 53
 
@@ -91,8 +93,8 @@ worker = {
 
 Terraform registers the static lease on MikroTik before creating the VM, and
 configures Proxmox with the same MAC address. This lets MikroTik assign the
-requested address on the VM's first DHCP request. VMs with `ip_address =
-"dhcp"` do not create a static lease.
+requested address on the VM's first DHCP request. Every VM and container in
+this project creates a static MikroTik lease from its configured `ip_address`.
 
 Keep each VM's map key stable: changing it changes the generated MAC address
 and therefore creates a new MikroTik lease identity.
