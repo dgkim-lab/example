@@ -1,0 +1,52 @@
+proxmox_endpoint  = "https://pve.example.com:8006/"
+proxmox_api_token = "terraform-prov@pve!terraform=replace-me"
+proxmox_insecure   = true
+aws_region         = "us-east-1"
+route53_zone_id    = null
+
+mikrotik_host     = "https://192.168.1.1"
+mikrotik_username = "terraform"
+mikrotik_password = "replace-me"
+mikrotik_insecure = true
+
+node_name          = "pve"
+datastore_id       = "local-lvm"
+image_datastore_id = "local"
+network_bridge     = "vmbr0"
+
+# Optional LXC containers. The same MikroTik DHCP and Route 53 integration
+# applies to containers as to VMs.
+containers = {
+  tools = {
+    ssh_public_key = "ssh-ed25519 AAAA... replace-with-your-public-key"
+    memory_mb      = 1024
+    disk_size_gb   = 8
+    ip_address     = "192.168.1.52/24"
+    dns_name       = "tools.example.com"
+    dhcp_server    = "dhcp1"
+  }
+}
+
+vms = {
+  web = {
+    name           = "terraform-web"
+    ssh_public_key = "ssh-ed25519 AAAA... replace-with-your-public-key"
+    cpu_cores      = 2
+    memory_mb      = 2048
+    disk_size_gb   = 20
+    ip_address     = "dhcp"
+    dns_name       = "web.example.com"
+  }
+
+  worker = {
+    name           = "terraform-worker"
+    ssh_public_key = "ssh-ed25519 AAAA... replace-with-your-public-key"
+    cpu_cores      = 4
+    memory_mb      = 4096
+    disk_size_gb   = 40
+    ip_address     = "192.168.1.51/24"
+    dns_name       = "worker.example.com"
+    mac_address    = "02:00:00:00:00:51"
+    dhcp_server    = "dhcp1"
+  }
+}
