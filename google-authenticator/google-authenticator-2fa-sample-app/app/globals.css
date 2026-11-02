@@ -1,0 +1,76 @@
+:root {
+  color-scheme: dark;
+  font-family: Arial, sans-serif;
+  background: #101318;
+  color: #f5f7fa;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+.shell {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px 20px;
+}
+a {
+  color: #8ab4ff;
+}
+h1 {
+  margin-top: 0;
+}
+h2 {
+  margin-bottom: 8px;
+}
+p {
+  color: #b6becb;
+  line-height: 1.5;
+}
+.card {
+  background: #191e27;
+  border: 1px solid #303846;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 16px 0;
+}
+label {
+  display: block;
+  margin: 14px 0 6px;
+  color: #d9dee8;
+}
+input {
+  width: 100%;
+  padding: 11px;
+  border-radius: 7px;
+  border: 1px solid #485365;
+  background: #0e1218;
+  color: white;
+}
+button {
+  margin-top: 18px;
+  padding: 11px 16px;
+  border: 0;
+  border-radius: 7px;
+  background: #6ea8fe;
+  color: #07101f;
+  font-weight: bold;
+  cursor: pointer;
+}
+button.secondary {
+  background: #303846;
+  color: white;
+}
+.row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.error {
+  color: #ff9b9b;
+}
+.success {
+  color: #99e6ae;
+}
